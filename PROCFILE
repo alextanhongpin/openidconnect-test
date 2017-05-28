@@ -1,2 +1,2 @@
-client: nodemon openid-client/server.js
+client: DEBUG=client nodemon openid-client/server.js
 server: nodemon openid-server/server.js

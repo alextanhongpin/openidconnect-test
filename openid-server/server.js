@@ -22,7 +22,6 @@ const PORT = 8000
 
 app.set('view engine', 'ejs')
 
-let isLoggedIn = false
 const clients = {
   '1': {
     id: 1,
@@ -32,47 +31,14 @@ const clients = {
   }
 }
 
-
 app.get('/', (req, res) => {
   res.render('client-index')
-})
-
-app.get('/login', (req, res) => {
-  res.locals.referer = req.query.referer
-  res.render('server-login')
-})
-
-app.get('/logout', (req, res) => {
-  isLoggedIn = false
-  res.redirect('/')
-})
-
-app.post('/login', (req, res) => {
-  isLoggedIn = true
-
-  // Check if the url is valid
-  if (req.body.referer === 'http://localhost:8000/authorize') {
-    // Avoid infinite loop
-    res.status(200).json({
-      redirect_uri: '/profile'
-    })
-  } else {
-    res.status(200).json({
-      redirect_uri: req.body.referer
-    })
-  }
-})
-
-app.get('/register', (req, res) => {
-  res.status(200).json({
-    msg: 'register'
-  })
 })
 
 app.get('/authorize', (req, res) => {
   // res.status(200).json({ ok: true })
   console.log(req.url)
-  if (isLoggedIn) {
+  if (true) {
     openid.authorize(req.query)
     .then((payload) => {
       res.locals.referer = payload.redirect_uri
@@ -133,15 +99,6 @@ app.post('/authorize', (req, res) => {
   // return code and state
 })
 
-app.post('/token', (req, res) => {
-  if (req.body.code === '123456') {
-    // if (token.expired) > 5 minutes
-    // if token used, delete
-    res.status(200).json({
-      access_token: 'this.is.your.token'
-    })
-  }
-})
 
 app.listen(PORT, () => {
   console.log(`openidprovider: listening to port *:${PORT}. press ctrl + c to cancel`)

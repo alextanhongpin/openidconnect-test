@@ -3,6 +3,7 @@ const app = express()
 const PORT = 4000
 
 const OpenID = require('./index.js')
+const debug = require('debug')('client')
 
 const openid = OpenID('authorization')({
   response_type: 'code',
@@ -15,15 +16,18 @@ const openid = OpenID('authorization')({
 app.set('view engine', 'ejs')
 
 app.get('/', (req, res) => {
+  debug('get:index')
   res.render('client-index')
 })
 
 app.get('/authorize', (req, res) => {
   const authUrl = openid.authorize()
+  debug('get:authorize:%s', authUrl)
   res.redirect(authUrl)
 })
 
 app.get('/authorize/callback', (req, res) => {
+  debug('get:authorize/callback:req.query => %s', req.query)
   // Pass all error messages to the locals
   res.locals = req.query
   // Exchange token with access_token
@@ -31,7 +35,8 @@ app.get('/authorize/callback', (req, res) => {
     access_token, token_type,
     refresh_token, expires_in, id_token
   }) => {
-    console.log('obtained token', access_token)
+
+    debug('get:authorize/callback:access_token => %s', access_token)
     res.locals.access_token = access_token
     res.render('client-authorize')
   }).catch((error) => {
