@@ -19,14 +19,15 @@ app.get('/', (req, res) => {
 })
 
 app.get('/authorize', (req, res) => {
-  res.redirect(openid.authorize())
+  const authUrl = openid.authorize()
+  res.redirect(authUrl)
 })
 
 app.get('/authorize/callback', (req, res) => {
+  // Pass all error messages to the locals
   res.locals = req.query
-
   // Exchange token with access_token
-  openid.token({ code: '123456' }).then(({
+  openid.token({ code: '123456', state: '' }).then(({
     access_token, token_type,
     refresh_token, expires_in, id_token
   }) => {
