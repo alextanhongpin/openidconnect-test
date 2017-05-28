@@ -19,7 +19,7 @@ mongoose.Promise = global.Promise
 app.set('view engine', 'ejs')
 
 function guardAuth (req, res, next) {
-  if (req.headers.authorization === '') {
+  if (!req.headers.authorization) {
     return next()
   }
   next(new Error('Authorization header missing'))
