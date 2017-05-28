@@ -56,8 +56,8 @@ class AuthorizationFlow {
       console.log(result.error.name, result.error.details)
     }
     Object.assign(this, result.value)
-    this.openid_auth_uri = 'https://server.example.com/authorize'
-    this.openid_token_uri = 'https://server.example.com/token'
+    this.openid_auth_uri = 'http://localhost:8000/authorize'
+    this.openid_token_uri = 'http://localhost:8000/token'
   }
 
   authorize () {
@@ -72,12 +72,14 @@ class AuthorizationFlow {
 
     return `${this.openid_auth_uri}?${query}`
   }
-  authorizeCallback (params) {
+  token (params) {
+    console.log('sending token parameters')
     return new Promise((resolve, reject) => {
       const result = schema.token(params)
       if (result.error) {
         return reject(result.error)
       }
+      console.log('sending token parameters', result)
       request({
         method: 'POST',
         url: this.openid_token_uri,

@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title></title>
+</head>
+<body>
+  <div>Hello World</div>
+  <% if (locals.error && locals.error_description) { %>
+    <h3>Error</h3>
+    <div><%= error %></div>
+    <div><%= error_description %></div>
+    <a href="/authorize">Back to Login</a>
+  <% } else { %>
+    <div>Success!</div>
+    <div><b>Access Token: </b><%= locals.access_token ? access_token : '' %></div>
+  <% } %>
+</body>
+</html>

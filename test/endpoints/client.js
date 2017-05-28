@@ -17,7 +17,7 @@ nock.disableNetConnect()
 function home (callback) {
   nock(CLIENT_URI)
   .get('/')
-  .replyWithFile(200, path.join(__dirname, '..', '..', '/view/index.html'))
+  .replyWithFile(200, path.join(__dirname, '..', '..', '/views/index.html'))
 
   request(CLIENT_URI, callback)
 }

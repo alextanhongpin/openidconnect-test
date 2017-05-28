@@ -1,0 +1,2 @@
+client: nodemon openid-client/server.js
+server: nodemon openid-server/server.js
