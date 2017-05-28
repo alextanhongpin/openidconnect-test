@@ -2,50 +2,28 @@
 
 const express = require('express')
 const app = express()
-const jwt = require('jsonwebtoken')
 const User = require('./model.js')
 const mongoose = require('mongoose')
+const debug = require('debug')
+const jwt = require('./jwt')
+
+// Constants
+const APP_NAME = 'openid-auth'
+const PORT = 5000
+const log = debug(APP_NAME)
 
 // Connect to the database
 mongoose.connect('mongodb://localhost/openid')
 mongoose.Promise = global.Promise
-// Constants
-const APP_NAME = 'openid-auth'
-const JWT_SECRET = process.env.JWT_SECRET || 'secret'
-const PORT = 5000
 
 app.set('view engine', 'ejs')
 
-// Middleware to check if user is already logged in
-function checkAuth (req, res, next) {
-  const authHeader = req.headers.authorization
-  const [ tokenType, token ] = authHeader.split(' ')
-  if (tokenType.toLowerCase() !== 'bearer') {
-    return next(new Error('Token type not recognized'))  
-  }
-  if (token === '') {
-    return next(new Error('Authorization token not present'))
-  }
-  jwt.verify(token, JWT_SECRET, (error, decoded) => {
-    if (error) {
-      return next(error)
-    }
-    req.id = decoded.user_id
-    // Compare with redis or db that the id is valid
-    return next()
-  })
-}
-
 function guardAuth (req, res, next) {
-  const authHeader = req.headers.authorization
-  if (authHeader === '') {
+  if (req.headers.authorization === '') {
     return next()
   }
-  next(new Error('Check your authorization header.'))
+  next(new Error('Authorization header missing'))
 }
-
-// Check if the user is already logged in, redirect if yes
-
 
 app.get('/', (req, res) => {
   res.status(200).json({
@@ -54,28 +32,24 @@ app.get('/', (req, res) => {
 })
 
 app.get('/logout', (req, res) => {
-  isLoggedIn = false
+  // Clear cookie
   res.redirect('/')
 })
 
 app.get('/login', guardAuth, (req, res) => {
   res.locals.referer = req.query.referer
-  res.render('server-login')
+  res.render('auth-login')
 })
 
-app.post('/login', guardAuth, (req, res) => {
+app.post('/login', guardAuth, (req, res, next) => {
+  const { email, password } = req.body
 
-  const { email, password } = req.body
   User.findOne({ email }).then((user) => {
     if (!user) {
-      return next(new Error('no user found'))
+      return next(new Error('No user found with the email found'))
     }
-    return user.comparePassword(password)
-  }).then((isMatchingPassword) => {
-    if (!isMatchingPassword) {
-      return Promise.reject(new Error('email or password is invalid'))
-    }
-    // Store user in cookie
+    return Promise.all([ user, user.comparePassword(password) ])
+  }).then(([ user, ok ]) => {
     // user._id
     res.status(200).json({
       success: ok,
@@ -87,7 +61,8 @@ app.post('/login', guardAuth, (req, res) => {
 })
 
 app.get('/register', guardAuth, (req, res, next) => {
-  const { email, password } = req.body
+  const { email, password } = req.body
+
   User.findOne({ email })
   .then((user) => {
     if (!user) {
@@ -100,31 +75,16 @@ app.get('/register', guardAuth, (req, res, next) => {
         return next()
       })
     }
-    return user.comparePassword(password)
-  }).then((isMatchingPassword) => {
-    if (!isMatchingPassword) {
-      return Promise.reject(new Error('email or password is invalid'))
-    }
-    req.user = newUser
+    return Promise.all([ user, user.comparePassword(password) ])
+  }).then(([ user, ok ]) => {
+    req.user = user
     next()
   }).catch((error) => {
     return next(error)
   })
-}, (req, res, next) => {
-  jwt.sign({
-    user_id: req.user._id
-  }, JWT_SECRET, {
-    expiresIn: '1h'
-  }, (err, token) => {
-    if (err) return next(err)
-    res.status(200).json({
-      access_token: token,
-      expires_in: 3600
-    })
-  })
-})
+}, jwt.signToken)
 
-app.get('/api/test', checkAuth, (req, res) => {
+app.get('/api/test', jwt.verifyToken, (req, res) => {
   res.status(200).json({
     user_id: req.user.id
   })
@@ -133,6 +93,7 @@ app.get('/api/test', checkAuth, (req, res) => {
 // log errors
 app.use((err, req, res, next) => {
   console.error(err.stack)
+  log('error:%s', err.stack)
   next(err)
   // res.status(500).send('Soemthing broke')
 })
@@ -150,7 +111,8 @@ app.use((err, req, res, next) => {
 // errorHandler
 app.use((err, req, res, next) => {
   res.status(500)
-  res.render('error', { error: err })
+  res.locals.error = err
+  res.render('error')
 })
 
 app.listen(PORT, () => {

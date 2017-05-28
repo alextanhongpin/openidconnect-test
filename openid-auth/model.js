@@ -14,11 +14,20 @@ const UserSchema = new mongoose.Schema({
   profile: String,
   picture: String,
   website: String,
-  email: { type: String, required: true, unique: true },
+  email: {
+    type: String, 
+    required: true, 
+    unique: true
+  },
   email_verified: Boolean,
-  password: { type: String, required: true },
+  password: {
+    type: String, required: true
+  },
   gender: String,
-  birthdate: { type: Date, default: Date.now },
+  birthdate: {
+    type: Date, 
+    default: Date.now
+  },
   zoneinfo: String,
   locale: String,
   phone_number: String,
@@ -38,11 +47,14 @@ const UserSchema = new mongoose.Schema({
 
 UserSchema.methods.comparePassword = function (password) {
   return new Promise((resolve, reject) => {
-    bcrypt.compare(password, this.password, (err, isMatch) => {
-      err ? reject(err) : resolve(isMatch)
+    bcrypt.compare(password, this.password, (error, isMatch) => {
+      if (error) {
+        reject(error)
+      } else {
+        isMatch ? resolve(true) : reject(new Error('Email or password is invalid'))
+      }
     })
   })
-
 }
 
 UserSchema.pre('save', function (next) {
