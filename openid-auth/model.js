@@ -15,8 +15,8 @@ const UserSchema = new mongoose.Schema({
   picture: String,
   website: String,
   email: {
-    type: String, 
-    required: true, 
+    type: String,
+    required: true,
     unique: true
   },
   email_verified: Boolean,
@@ -25,7 +25,7 @@ const UserSchema = new mongoose.Schema({
   },
   gender: String,
   birthdate: {
-    type: Date, 
+    type: Date,
     default: Date.now
   },
   zoneinfo: String,
@@ -45,6 +45,7 @@ const UserSchema = new mongoose.Schema({
   updatedAt: 'updated_at'
 })
 
+// compare the password with the saved hash
 UserSchema.methods.comparePassword = function (password) {
   return new Promise((resolve, reject) => {
     bcrypt.compare(password, this.password, (error, isMatch) => {
@@ -57,20 +58,27 @@ UserSchema.methods.comparePassword = function (password) {
   })
 }
 
+// hash the password before saving
 UserSchema.pre('save', function (next) {
   const user = this
   // only hash password if it is modified, or is new
-  if (!user.isModified('password')) return next()
+  if (!user.isModified('password')) {
+    return next()
+  }
 
-    bcrypt.genSalt(SALT_WORK_FACTOR, (err, salt) => {
-      if (err) return next(err)
+  bcrypt.genSalt(SALT_WORK_FACTOR, (error, salt) => {
+    if (error) {
+      return next(error)
+    }
 
-        bcrypt.hash(user.password, (err, hash) => {
-          if (err) return next(err)
-          user.password = hash
-          next()
-        })
+    bcrypt.hash(user.password, (error, hash) => {
+      if (error) {
+        return next(error)
+      }
+      user.password = hash
+      next()
     })
+  })
 })
 
 module.exports = mongoose.model('User', UserSchema)

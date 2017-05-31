@@ -31,7 +31,8 @@ const clients = {
   }
 }
 
-app.get('/', (req, res) => {
+app.get('/', (req, res) => {  
+
   res.render('client-index')
 })
 
